@@ -95,6 +95,9 @@ while [ $# -gt 0 ] ; do
 	shift # load next argument
 done
 
+lb_set_log_level INFO
+lb_istrue $debug_mode && lb_set_log_level DEBUG
+
 # load default config file if not specified
 if [ -z "$config_file" ] ; then
 	# search config first in current directory, then in /etc
@@ -111,17 +114,8 @@ if [ -z "$config_file" ] ; then
 	fi
 fi
 
-lb_set_log_level INFO
-lb_istrue $debug_mode && lb_set_log_level DEBUG
-
-# analyse config template
-if ! lb_read_config -a "$script_directory"/config/time2dump.example.conf ; then
-	lb_error "Failed to load config template"
-	exit 3
-fi
-
 # load config file
-if ! lb_import_config "$config_file" "${lb_read_config[@]}" ; then
+if ! lb_import_config -t "$script_directory"/config/time2dump.example.conf "$config_file" ; then
 	lb_error "Failed to load config"
 	exit 3
 fi
