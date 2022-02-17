@@ -10,6 +10,7 @@
 # Index of functions
 #
 #   t2d_backup
+#   t2d_history
 #   t2d_rotate
 
 
@@ -118,6 +119,62 @@ t2d_backup() {
 	fi
 
 	return $result
+}
+
+
+# Get backup history of a database
+# Usage: t2d_history [OPTIONS] DB_NAME
+# Exit codes:
+#   0: OK
+#   1: usage error
+#   2: error with paths
+t2d_history() {
+	# get options
+	while [ $# -gt 0 ] ; do
+		case $1 in
+			-q|--quiet)
+				quiet_mode=true
+				;;
+			-h|--help)
+				print_help
+				return 0
+				;;
+			*)
+				break
+				;;
+		esac
+		shift # load next argument
+	done
+
+	# missing arguments
+	if [ $# = 0 ] ; then
+		print_help
+		return 1
+	fi
+
+	local database=$*
+
+	# get backup history
+	history=($(get_backup_history "$database"))
+
+	# no backup found
+	if [ ${#history[@]} = 0 ] ; then
+		lb_error "No backup found for '$database'!"
+		return 5
+	fi
+
+	# print backup versions
+	for b in "${history[@]}" ; do
+		echo "$b"
+	done
+
+	# complete result (not quiet mode)
+	if ! lb_istrue $quiet_mode ; then
+		echo
+		echo "${#history[@]} backups found for $database"
+	fi
+
+	return 0
 }
 
 

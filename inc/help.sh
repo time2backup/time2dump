@@ -21,6 +21,7 @@ print_help() {
 	if [ "$1" = global ] ; then
 		echo "Commands:"
 		echo "   backup     Backup databases"
+		echo "   history    Displays backup history of a database"
 		echo "   rotate     Rotate backups"
 		echo
 		echo "Run 'time2dump COMMAND --help' for more information on a command."
@@ -29,21 +30,43 @@ print_help() {
 
 	case $command in
 		backup)
-			echo "Command usage: $command [OPTIONS] [DB_NAME...]"
-			echo
+			print_help_usage "[DATABASE...]"
 			echo "Backup databases"
-			echo
-			echo "Options:"
+
+			print_help_options #backup
 			echo "  -h, --help  Print help"
 			;;
+		history)
+			print_help_usage "DATABASE"
+			echo "Get backup history of a database"
+
+			print_help_options #history
+			echo "  -q, --quiet  Quiet mode; print only backup dates"
+			echo "  -h, --help   Print help"
+			;;
 		rotate)
-			echo "Command usage: $command [OPTIONS] [LIMIT]"
-			echo
+			print_help_usage "[LIMIT]"
 			echo "Rotate backups"
-			echo
-			echo "Options:"
+
+			print_help_options #rotate
 			echo "   -f, --force  Force mode, do not confirm"
 			echo "   -h, --help   Print help"
 			;;
 	esac
+}
+
+
+# Print help usage
+# Usage: print_help_usage [ARG...]
+print_help_usage() {
+	echo "Command usage: $command [OPTIONS] $*
+"
+}
+
+
+# Print options text
+# Usage: print_help_options
+print_help_options() {
+	echo "
+Options:"
 }

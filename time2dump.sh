@@ -148,7 +148,7 @@ fi
 
 # run command
 case $command in
-	backup|rotate)
+	backup|history|rotate)
 		t2d_$command "$@"
 		clean_exit $?
 		;;

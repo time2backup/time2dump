@@ -13,6 +13,7 @@
 #   check_config
 #   run_command
 #   get_backups
+#   get_backup_history
 #   delete_backup
 #   rotate_backups
 #   clean_empty_backup
@@ -73,6 +74,82 @@ run_command() {
 get_backups() {
 	local backup_date_format="[1-9][0-9]{3}-[0-1][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]"
 	ls "$destination" 2> /dev/null | grep -E "^$backup_date_format$"
+}
+
+
+# Get backup history of a database
+# Usage: get_backup_history [OPTIONS] DATABASE
+# Options:
+#   -l  get only last version
+#   -z  except latest backup
+# Dependencies: $destination
+# Return: dates (YYYY-MM-DD-HHMMSS format)
+# Exit codes:
+#   0: OK
+#   1: usage error
+#   2: no backups found
+#   3: cannot found backups (no absolute path, deleted parent directory)
+get_backup_history() {
+	# default options
+	local last_version=false not_latest=false
+
+	# get options
+	while [ $# -gt 0 ] ; do
+		case $1 in
+			-l)
+				last_version=true
+				;;
+			-z)
+				not_latest=true
+				;;
+			*)
+				break
+				;;
+		esac
+		shift # load next argument
+	done
+
+	# usage error
+	[ $# = 0 ] && return 1
+
+	# get all backups
+	local all_backups=($(get_backups))
+
+	# no backups found
+	[ ${#all_backups[@]} = 0 ] && return 2
+
+	# get backup path
+	local database=$*
+
+	# prepare for loop
+	local date first=true
+	local -i i nb_versions=0
+
+	# try to find database from latest backup to oldest
+	for ((i=${#all_backups[@]}-1 ; i>=0 ; i--)) ; do
+
+		date=${all_backups[i]}
+
+		# if backup file does not exists, continue
+		[ -f "$destination/$date/$database.sql.gz" ] || continue
+
+		# except the latest
+		if $not_latest && $first ; then
+			first=false
+			continue
+		fi
+
+		# if get only last version, print and exit
+		if $last_version ; then
+			echo $date
+			return 0
+		fi
+
+		echo $date
+		nb_versions+=1
+	done
+
+	[ $nb_versions -gt 0 ] || return 2
 }
 
 
