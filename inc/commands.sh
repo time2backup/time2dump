@@ -110,19 +110,9 @@ t2d_backup() {
 		fi
 	done
 
-	local dest=$backup_date
-
-	# archive option
-	if lb_istrue $archive_backups ; then
-		lb_display --log
-		lb_display --log "Archive backup..."
-		dest=$backup_date.tar
-		(cd "$destination" && tar cf "$dest" "$backup_date" && rm -rf "$backup_date")
-	fi
-
 	if [ $result = 0 ] ; then
 		# create latest link (preserve context)
-		(cd "$destination" && ln -snf "$dest" latest)
+		(cd "$destination" && ln -snf "$backup_date" latest)
 
 		rotate_backups
 	fi

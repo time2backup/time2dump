@@ -72,7 +72,6 @@ run_command() {
 #   1: nothing found
 get_backups() {
 	local backup_date_format="[1-9][0-9]{3}-[0-1][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]"
-	lb_istrue $archive_backups && backup_date_format+="\.tar"
 	ls "$destination" 2> /dev/null | grep -E "^$backup_date_format$"
 }
 
