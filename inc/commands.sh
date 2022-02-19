@@ -210,10 +210,18 @@ t2d_rotate() {
 
 	# test if specified limit is valid
 	if [ $# -gt 0 ] ; then
-		if ! lb_is_integer "$1" || [ $1 -lt 0 ] ; then
-			print_help
-			return 1
+		if lb_is_integer "$1" ; then
+			if [ $1 -lt 0 ] ; then
+				print_help
+				return 1
+			fi
+		else
+			if ! test_period "$1" ; then
+				print_help
+				return 2
+			fi
 		fi
+
 		keep=$1
 	fi
 

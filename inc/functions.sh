@@ -2,17 +2,22 @@
 #  time2dump global functions
 #
 #  This file is part of time2dump
-#
-#  MIT License
-#  Copyright (c) 2017-2021 Jean Prunneaux
+#  Source code: https://github.com/time2backup/time2dump
 #
 
-# Index
+backup_date_format="[1-9][0-9]{3}-[0-1][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]"
+current_timestamp=$(date +%s)
+
+# Index of functions
 #
 #   debug
+#   test_period
+#   period2seconds
+#   check_backup_date
 #   check_config
 #   run_command
 #   get_backups
+#   get_backup_date
 #   get_backup_history
 #   delete_backup
 #   rotate_backups
@@ -26,6 +31,36 @@
 debug() {
 	lb_istrue $debug_mode || return 0
 	lb_debug "$*"
+}
+
+
+# Test if a string is a period
+# Usage: test_period PERIOD
+# Exit codes:
+#   0: period is valid
+#   1: not valid syntax
+test_period() {
+	echo "$*" | grep -Eq "^[1-9][0-9]*(m|h|d)$"
+}
+
+
+# Convert a period in seconds
+# Usage: period2seconds N(m|h|d)
+# Return: seconds
+period2seconds() {
+	# convert minutes then to seconds
+	echo $(($(echo "$*" | sed 's/m//; s/h/\*60/; s/d/\*1440/') * 60))
+}
+
+
+# Check syntax of a backup date
+# Usage: check_backup_date DATE
+# Dependencies: $backup_date_format
+# Exit codes:
+#   0: OK
+#   1: non OK
+check_backup_date() {
+	echo $1 | grep -Eq "^$backup_date_format$"
 }
 
 
@@ -72,8 +107,45 @@ run_command() {
 #   0: OK
 #   1: nothing found
 get_backups() {
-	local backup_date_format="[1-9][0-9]{3}-[0-1][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]"
 	ls "$destination" 2> /dev/null | grep -E "^$backup_date_format$"
+}
+
+
+# Get readable backup date
+# Usage: get_backup_date [OPTIONS] YYYY-MM-DD-HHMMSS
+# Options:
+#   -t  Get timestamp instead of date
+# Dependencies: $tr_readable_date
+# Return: backup datetime (format YYYY-MM-DD HH:MM:SS)
+# e.g. 2016-12-31-233059 -> 2016-12-31 23:30:59
+# Exit codes:
+#   0: OK
+#   1: format error
+get_backup_date() {
+	local format="%Y-%m-%d at %H:%M:%S"
+
+	# get timestamp option
+	if [ "$1" = '-t' ] ; then
+		format='%s'
+		shift
+	fi
+
+	# test backup format
+	check_backup_date "$*" || return 1
+
+	# get date details
+	local byear=${1:0:4} bmonth=${1:5:2} bday=${1:8:2} \
+	      bhour=${1:11:2} bmin=${1:13:2} bsec=${1:15:2}
+
+	# return date formatted for languages
+	case $lb_current_os in
+		BSD|macOS)
+			date -j -f "%Y-%m-%d %H:%M:%S" "$byear-$bmonth-$bday $bhour:$bmin:$bsec" +"$format"
+			;;
+		*)
+			date -d "$byear-$bmonth-$bday $bhour:$bmin:$bsec" +"$format"
+			;;
+	esac
 }
 
 
@@ -161,7 +233,6 @@ get_backup_history() {
 #   1: usage error
 #   2: rm error
 delete_backup() {
-	# usage error
 	[ -z "$1" ] && return 1
 
 	# test mode: no delete
@@ -169,8 +240,7 @@ delete_backup() {
 
 	# delete backup directory
 	debug "Deleting $destination/$1..."
-	rm -rf "$destination/$1"
-	if [ $? != 0 ] ; then
+	if ! rm -rf "$destination/$1" ; then
 		lb_display_error --log "Failed to delete backup $1! Please delete this folder manually."
 		return 2
 	fi
@@ -198,16 +268,43 @@ rotate_backups() {
 	local all_backups=($(get_backups)) b to_rotate=()
 	local nb_backups=${#all_backups[@]}
 
-	# always keep nb + 1 (do not delete latest backup)
-	limit=$(($limit + 1))
+	# clean based on number of backups
+	if lb_is_integer $limit ; then
+		# always keep nb + 1 (do not delete latest backup)
+		limit=$(($limit + 1))
 
-	# if limit not reached, do nothing
-	[ $nb_backups -le $limit ] && return 0
+		# if limit not reached, do nothing
+		[ $nb_backups -le $limit ] && return 0
 
-	debug "Clean to keep $limit backups on $nb_backups"
+		debug "Clean to keep $limit backups on $nb_backups"
 
-	# get old backups until max - nb to keep
-	to_rotate=(${all_backups[@]:0:$(($nb_backups - $limit))})
+		# get old backups until max - nb to keep
+		to_rotate=(${all_backups[@]:0:$(($nb_backups - $limit))})
+
+	else
+		# clean based on time periods
+		local t time_limit=$(($current_timestamp - $(period2seconds $limit)))
+
+		for b in "${all_backups[@]}" ; do
+			# do not delete the only backup
+			[ $nb_backups -le 1 ] && break
+
+			# get timestamp of this backup
+			t=$(get_backup_date -t $b)
+			lb_is_integer $t || continue
+
+			# time limit reached: stop iterate
+			[ $t -ge $time_limit ] && break
+
+			debug "Clean old backup $b because > $limit"
+
+			# add backup to list to clean
+			to_rotate+=("$b")
+
+			# decrement nb of current backups
+			nb_backups=$(($nb_backups - 1))
+		done
+	fi
 
 	# nothing to clean: quit
 	if [ ${#to_rotate[@]} = 0 ] ; then
@@ -215,7 +312,6 @@ rotate_backups() {
 		return 0
 	fi
 
-	lb_display --log
 	lb_display --log "Cleaning old backups..."
 
 	# remove backups from older to newer
