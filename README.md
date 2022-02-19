@@ -1,6 +1,6 @@
 # time2dump
 
-It's time to dump your databases!
+time2dump is a simple tool to backup (dump) your databases.
 
 Currently supported databases:
 - mysql

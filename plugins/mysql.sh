@@ -2,9 +2,7 @@
 #  time2dump database plugin
 #
 #  This file is part of time2dump
-#
-#  MIT License
-#  Copyright (c) 2017-2021 Jean Prunneaux
+#  Source code: https://github.com/time2backup/time2dump
 #
 
 # Index of functions

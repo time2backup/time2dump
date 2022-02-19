@@ -5,12 +5,12 @@
 #  Backup your databases
 #
 #  MIT License
-#  Copyright (c) 2017-2021 Jean Prunneaux
+#  Copyright (c) 2017-2022 Jean Prunneaux
 #
-#  Version 1.4.1 (2021-03-19)
+#  Version 1.5.0 (2022-02-19)
 #
 
-declare -r version=1.4.1
+declare -r version=1.5.0
 
 
 #

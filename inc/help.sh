@@ -2,9 +2,7 @@
 #  time2dump help functions
 #
 #  This file is part of time2dump
-#
-#  MIT License
-#  Copyright (c) 2017-2021 Jean Prunneaux
+#  Source code: https://github.com/time2backup/time2dump
 #
 
 # Print help for users in console

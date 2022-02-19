@@ -2,9 +2,7 @@
 #  time2dump commands
 #
 #  This file is part of time2dump
-#
-#  MIT License
-#  Copyright (c) 2017-2021 Jean Prunneaux
+#  Source code: https://github.com/time2backup/time2dump
 #
 
 # Index of functions
@@ -15,7 +13,7 @@
 
 
 # Perform backup
-# Usage: t2d_backup [OPTIONS] [DB_NAME...]
+# Usage: t2d_backup [OPTIONS] [DATABASE...]
 # Exit codes:
 #   0: OK
 #   1: usage error
@@ -123,7 +121,7 @@ t2d_backup() {
 
 
 # Get backup history of a database
-# Usage: t2d_history [OPTIONS] DB_NAME
+# Usage: t2d_history [OPTIONS] DATABASE
 # Exit codes:
 #   0: OK
 #   1: usage error
